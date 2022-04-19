@@ -18,26 +18,11 @@ TMPDIR="$MAGISKTMP/.magisk/tmp"
 DATA_BLOCK="$(mount | grep " /data " | awk '{ print $1 }')"
 DATA_BLOCK="/dev/block/$(basename "$DATA_BLOCK")"
 test -z "$DATA_BLOCK" && exit
-DATA_MOUNTPOINT="/dev/mnt_mirror/data"
 MAGISK_DATAMIRROR="$MAGISKTMP/.magisk/mirror/data"
-OVERLAYFS_DIR="/dev/mnt_mirror/overlay"
-
-mkdir -p "/dev/mnt_mirror"
-mkdir -p "$DATA_MOUNTPOINT"
-mount --bind "$MAGISK_DATAMIRROR" "$DATA_MOUNTPOINT"
-
-#mount -o rw,seclabel,relatime $DATA_BLOCK "$DATA_MOUNTPOINT"
-
 
 MODID="$(basename "${0%/*}")"
-MODPATH="$DATA_MOUNTPOINT/adb/modules/$MODID"
-
-
-mkdir -p "$OVERLAYFS_DIR"
-mount --bind "$DATA_MOUNTPOINT/adb/modules/$MODID" "$OVERLAYFS_DIR"
-
-MODDIR="$OVERLAYFS_DIR"
-MODDIR2="$MAGISK_DATAMIRROR/adb/modules/$MODID"
+MODPATH="$MAGISK_DATAMIRROR/adb/modules/$MODID"
+MODDIR="$MODPATH"
 
 mount | grep -q " /vendor " && vendor=/vendor
 mount | grep -q " /system_ext " && system_ext=/system_ext
@@ -50,23 +35,14 @@ list_folder="$(find /data/adb/modules/*/system/* -type d)"
 for dir in $list_folder; do
 test -f "$dir/.replace" && setfattr -n trusted.overlay.opaque -v y "$dir" || setfattr -x trusted.overlay.opaque "$dir"
 done
-list_module="$(find $DATA_MOUNTPOINT/adb/modules/* -prune -type d)"
-mkdir -p /dev/mnt_mirror/modules
-for module in $list_module; do
-count_id=$(($count_id + 1))
-rm -rf "/dev/mnt_mirror/modules/$count_id"
-ln -sf "$module" "/dev/mnt_mirror/modules/$count_id"
-done
-
 )
 
 
 
 get_modules(){ (
 extra="$1"; data="$2"
-test -z "$data" && data="$DATA_MOUNTPOINT"
 IFS=$'\n'
-modules="$(find /dev/mnt_mirror/modules/*/system -prune -type d)"
+modules="$(find $MAGISKTMP/.magisk/modules/*/system -prune -type d)"
 ( for module in $modules; do
 [ ! -e "${module%/*}/disable" ] && [ -f "${module%/*}/overlay" -o -f "$MODDIR/enable" ] && [ -d "${module}${extra}" ] && echo -ne "${module}/${extra}\n"
 done ) | tr '\n' ':'
@@ -87,20 +63,21 @@ fi
 overlay(){ (
 fs="$1"
 extra="$2"
+overlay_name="$MAGISKTMP/.magisk/block/overlay"
 mkdir -p "$MODDIR/overlay/$fs"
 mkdir -p "$MODDIR/workdir/$fs"
 magisk --clone-attr "$fs" "$MODDIR/overlay/$fs"
 true
 MOUNT_OPTION="lowerdir=$extra$fs,upperdir=$MODDIR/overlay/$fs,workdir=$MODDIR/workdir/$fs"
-MOUNT_OPTION2="lowerdir=$extra$MAGISKTMP/.magisk/mirror/$fs,upperdir=$MODDIR2/overlay/$fs,workdir=$MODDIR2/workdir/$fs"
+MOUNT_OPTION2="lowerdir=$extra$MAGISKTMP/.magisk/mirror/$fs,upperdir=$MODDIR/overlay/$fs,workdir=$MODDIR/workdir/$fs"
 if $LOCK_RO; then
 MOUNT_OPTION="lowerdir=$MODDIR/overlay/$fs:$extra$fs"
-MOUNT_OPTION2="lowerdir=$MODDIR2/overlay/$fs:$extra$MAGISKTMP/.magisk/mirror/$fs"
+MOUNT_OPTION2="lowerdir=$MODDIR/overlay/$fs:$extra$MAGISKTMP/.magisk/mirror/$fs"
 fi
 
-mount -t overlay -o "$MOUNT_ATTR,$MOUNT_OPTION" overlay "$fs" 
-mount -t overlay -o "$MOUNT_ATTR,$MOUNT_OPTION2" overlay "$MAGISKTMP/.magisk/mirror/$fs" 
-mount | grep " $fs " | grep -q "^overlay" && echo -n  "$fs " >>"$TMPDIR/overlay_mountpoint"
+mount -t overlay -o "$MOUNT_ATTR,$MOUNT_OPTION" $overlay_name "$fs" 
+mount -t overlay -o "$MOUNT_ATTR,$MOUNT_OPTION2" $overlay_name "$MAGISKTMP/.magisk/mirror/$fs" 
+mount -t overlay | grep " $fs " && echo -n  "$fs " >>"$TMPDIR/overlay_mountpoint"
 ) &
 }
 
@@ -119,7 +96,11 @@ mount -o ro "$MAGISKTMP/.magisk/block/$block" "$MAGISKTMP/.magisk/mirror/real_$b
 fi
 done
 
+
 overlay /system
+
+
+
 
 mk_nullchar_dev(){
 TARGET="$1"
@@ -128,12 +109,6 @@ mkdir -p "${TARGET%/*}"
 mknod "$TARGET" c 0 0
 }
 
-
-# emulate files/directories are deleted
-
-for delfile in /system/addon.d /system/etc/init.d /system/bin/su /system/xbin/su /vendor/bin/su /system/etc/.has_daemon_su; do
-mk_nullchar_dev "$MODDIR/overlay/$delfile"
-done
 
 # merge modified /system, /vendor, /product, ... from modules to real partition (do not merge on root directory of these partition)
 
@@ -166,11 +141,7 @@ done
 
 cp "$MODPATH/module.prop" "$TMPDIR/overlay_status"
 
-MOUNTED=$(cat "$TMPDIR/overlay_mountpoint")
-
-[ "${#MOUNTED}" -gt 50 ] && MOUNTED="${MOUNTED: 0: 50}... and more"
-
-DESC="OverlayFS is working normally 😋. Loaded overlay on $MOUNTED for $COUNT module(s)"
+DESC="OverlayFS is working normally 😋. Loaded overlay for $COUNT module(s)"
 
 [ ! "$MOUNTED" ] && DESC="OverlayFS is not working!! Maybe your kernel does not support overlayfs ☹️"
 
