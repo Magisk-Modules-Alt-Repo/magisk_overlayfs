@@ -143,7 +143,7 @@ cp "$MODPATH/module.prop" "$TMPDIR/overlay_status"
 
 DESC="OverlayFS is working normally 😋. Loaded overlay for $COUNT module(s)"
 
-[ ! "$MOUNTED" ] && DESC="OverlayFS is not working!! Maybe your kernel does not support overlayfs ☹️"
+[ ! -f "$TMPDIR/overlay_mountpoint" ] && DESC="OverlayFS is not working!! Maybe your kernel does not support overlayfs ☹️"
 
 
 sed -Ei "s|^description=(\[.*][[:space:]]*)?|description=[ $DESC ] |g" "$TMPDIR/overlay_status"
