@@ -5,6 +5,7 @@ unset system_ext
 MODPATH="${0%/*}"
 rm -rf "$MODPATH/err_output.txt"
 exec 2>> "$MODPATH/err_output.txt"
+set -x
 
 MAGISKTMP="$(magisk --path)"
 [ -z "$MAGISKTMP" ] && MAGISKTMP=/sbin
