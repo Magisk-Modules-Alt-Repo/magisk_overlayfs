@@ -5,6 +5,7 @@ unset system_ext
 MODPATH="${0%/*}"
 rm -rf "$MODPATH/err_output.txt"
 exec 2>> "$MODPATH/err_output.txt"
+set -x
 
 MAGISKTMP="$(magisk --path)"
 [ -z "$MAGISKTMP" ] && MAGISKTMP=/sbin
@@ -41,8 +42,9 @@ done
 
 get_modules(){ (
 extra="$1"; data="$2"
+[ -z "$data" ] && data="$MAGISKTMP/.magisk/modules"
 IFS=$'\n'
-modules="$(find $MAGISKTMP/.magisk/modules/*/system -prune -type d)"
+modules="$(find "$data/"*"/system" -prune -type d)"
 ( for module in $modules; do
 [ ! -e "${module%/*}/disable" ] && [ -f "${module%/*}/overlay" -o -f "$MODDIR/enable" ] && [ -d "${module}${extra}" ] && echo -ne "${module}/${extra}\n"
 done ) | tr '\n' ':'
@@ -82,6 +84,35 @@ mount -t overlay | grep " $fs " && echo -n  "$fs " >>"$TMPDIR/overlay_mountpoint
 }
 
 
+rm -rf "/dev/system_overlay"
+ln -fs "$MODDIR" "/dev/system_overlay"
+rm -rf "/dev/module_overlay"
+ln -fs "$MAGISKTMP/.magisk/modules" "/dev/module_overlay"
+
+overlay_system(){ (
+fs="$1"
+extra="$2"
+overlay_name="/dev/block/by-name/system"
+mkdir -p "$MODDIR/overlay/$fs"
+mkdir -p "$MODDIR/workdir/$fs"
+magisk --clone-attr "$fs" "$MODDIR/overlay/$fs"
+MODDIR2="/dev/system_overlay"
+
+true
+MOUNT_OPTION="lowerdir=$extra$fs,upperdir=$MODDIR2/overlay/$fs,workdir=$MODDIR2/workdir/$fs"
+MOUNT_OPTION2="lowerdir=$extra$MAGISKTMP/.magisk/mirror/$fs,upperdir=$MODDIR/overlay/$fs,workdir=$MODDIR/workdir/$fs"
+if $LOCK_RO; then
+MOUNT_OPTION="lowerdir=$MODDIR2/overlay/$fs:$extra$fs"
+MOUNT_OPTION2="lowerdir=$MODDIR/overlay/$fs:$extra$MAGISKTMP/.magisk/mirror/$fs"
+fi
+
+mount -t overlay -o "$MOUNT_ATTR,$MOUNT_OPTION" $overlay_name "$fs" 
+mount -t overlay -o "$MOUNT_ATTR,$MOUNT_OPTION2" $overlay_name "$MAGISKTMP/.magisk/mirror/$fs" 
+mount -t overlay | grep " $fs " && echo -n  "$fs " >>"$TMPDIR/overlay_mountpoint"
+) &
+}
+
+
 
 ROPART="
 $vendor
@@ -97,7 +128,12 @@ fi
 done
 
 
+if [ -f "$MODDIR/hide" ]; then
+# hide overlayfs with hiding magisk mechanism, hide custom rom will be invalid
 overlay /system
+else
+overlay_system /system
+fi
 
 
 
@@ -109,12 +145,20 @@ mkdir -p "${TARGET%/*}"
 mknod "$TARGET" c 0 0
 }
 
+# hide custom rom
+mk_nullchar_dev "$MODPATH/overlay/system/addon.d"
+mk_nullchar_dev "$MODPATH/overlay/system/etc/init.d"
+
 
 # merge modified /system, /vendor, /product, ... from modules to real partition (do not merge on root directory of these partition)
 
 (cd /system; find * -prune -type d ) | while read dir; do
 if [ ! -L "/system/$dir" ]; then
-mountpoint "/system/$dir" -q || overlay "/system/$dir" "$(get_modules "/$dir")"
+  if [ "$dir" == "fonts" ] && [ ! -f "$MODPATH/hide" ]; then
+    overlay_system "/system/$dir" "$(get_modules "/$dir" "/dev/module_overlay")"
+  else
+    mountpoint "/system/$dir" -q || overlay "/system/$dir" "$(get_modules "/$dir")"
+  fi
 fi
 done
 
@@ -152,3 +196,5 @@ mount --bind "$TMPDIR/overlay_status" "$MAGISKTMP/.magisk/modules/$MODID/module.
 }
 
 module_status &
+rm -rf "/dev/system_overlay"
+rm -rf "/dev/module_overlay"
