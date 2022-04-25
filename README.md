@@ -12,7 +12,7 @@ From Android 10+, system may no longer to be mounted as read-write. A simple scr
 - After modifying overlay, you can lock it as read-only by creating a dummy file name `lockro`, however overlay will not be able to be remounted as read-write.
 - Hide custom ROM, overlay system partitions with no `addon.d` and `init.d` without actually deleting them.
 - Hide OverlayFS: Create `hide` dummy file in `/data/adb/modules/magisk_overlayfs` to hide overlayfs but hiding custom ROM will lose effect. In fact, there are very few apps detect for OverlayFS or Custom ROM. In short, cannot hide both Custom ROM and OverlayFS at same time.
-- On Android 12+, font modules will crash apps if you hide Magisk from those apps. OverlayFS will keep all font files intact after magisk module files are unmounted for those apps (only if hiding OverlayFS is not enabled).
+- On Android 12+, font modules will crash apps if you hide Magisk from those apps. OverlayFS will keep all font files intact after magisk module files are unmounted for those apps (only if OverlayFS is enabled on modules and hiding OverlayFS is disabled).
 - Overlay-based modules for Magisk modules, (merge modules system files into system by using overlayfs instead of Magic Mount): 
     - Enable on some modules: Create `overlay` and `skip_mount` (if you don't want to use Magic Mount) dummy file in which module directory you want to enable this feature
     - Enable for all modules (Global mode): Create `enable` dummy file in `/data/adb/modules/magisk_overlayfs` and create `skip_mount` for all modules, you can do it by using this command in Terminal Emulator: 
