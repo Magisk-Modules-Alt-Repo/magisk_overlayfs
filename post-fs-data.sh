@@ -128,7 +128,9 @@ fi
 done
 
 
+
 overlay /system
+
 
 
 
@@ -138,10 +140,6 @@ rm -rf "$TARGET"
 mkdir -p "${TARGET%/*}"
 mknod "$TARGET" c 0 0
 }
-
-# hide custom rom
-mk_nullchar_dev "$MODPATH/overlay/system/addon.d"
-mk_nullchar_dev "$MODPATH/overlay/system/etc/init.d"
 
 
 # merge modified /system, /vendor, /product, ... from modules to real partition (do not merge on root directory of these partition)
