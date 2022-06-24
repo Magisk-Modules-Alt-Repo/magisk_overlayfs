@@ -128,13 +128,7 @@ fi
 done
 
 
-if [ -f "$MODDIR/hide" ]; then
-# hide overlayfs with hiding magisk mechanism, hide custom rom will be invalid
 overlay /system
-else
-overlay_system /system
-fi
-
 
 
 
@@ -154,11 +148,7 @@ mk_nullchar_dev "$MODPATH/overlay/system/etc/init.d"
 
 (cd /system; find * -prune -type d ) | while read dir; do
 if [ ! -L "/system/$dir" ]; then
-  if [ "$dir" == "fonts" ] && [ ! -f "$MODPATH/hide" ]; then
-    overlay_system "/system/$dir" "$(get_modules "/$dir" "/dev/module_overlay")"
-  else
     mountpoint "/system/$dir" -q || overlay "/system/$dir" "$(get_modules "/$dir")"
-  fi
 fi
 done
 
