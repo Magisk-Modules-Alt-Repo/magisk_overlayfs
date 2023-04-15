@@ -46,6 +46,12 @@ handle() {
   fi
 }
 
+create_ext4_image() {
+    dd if=/dev/zero of="$1" bs=1024 count=100
+    /system/bin/mkfs.ext4 "$1" && return 0
+    return 1
+}
+
 support_overlayfs() {
 
 #OVERLAY_IMAGE_EXTRA - number of kb need to be added to overlay.img
@@ -53,9 +59,8 @@ support_overlayfs() {
 
 if [ -d "$MODPATH/system" ]; then
     OVERLAY_IMAGE_SIZE="$(sizeof "$MODPATH/system" "$OVERLAY_IMAGE_EXTRA")"
-    rm -rf "$MODPATH/overlay.img" "$MODPATH/overlay.img.xz"
-    cp -af /data/adb/overlay.xz "$MODPATH/overlay.img.xz"
-    xz -d "$MODPATH/overlay.img.xz"
+    rm -rf "$MODPATH/overlay.img"
+    create_ext4_image "$MODPATH/overlay.img"
     resize_img "$MODPATH/overlay.img" "${OVERLAY_IMAGE_SIZE}M" || { ui_print "! Setup failed"; return 1; }
     ui_print "- Created overlay image with size: $(du -shH "$MODPATH/overlay.img" | awk '{ print $1 }')"
     loop_setup "$MODPATH/overlay.img"

@@ -1,6 +1,10 @@
 # Magisk Overlayfs
 
-On Android 10+, system partitions might no longer be able to remount as read-write. For devices use dynnamic partition, it is nearly impossible to modify system partiton as there is no space left. This module solves these problem by using OverlayFS:
+On Android 10+, system partitions might no longer be able to remount as read-write. For devices use dynnamic partition, it is nearly impossible to modify system partiton as there is no space left. This module solves these problem by using OverlayFS. So what is OverlayFS? On [Wikipedia](https://en.m.wikipedia.org/wiki/OverlayFS):
+
+> OverlayFS is a union mount filesystem implementation for Linux. It combines multiple different underlying mount points into one, resulting in single directory structure that contains underlying files and sub-directories from all sources. Common applications overlay a read/write partition over a read-only partition, such as with LiveCDs and IoT devices with limited flash memory write cycles.
+
+Benefits of using overlayfs for system partitions:
 
 - Make most parts of system partition (`/system`, `/vendor`, `/product`, `/system_ext`, `/odm`, `/odm_dlkm`, `/vendor_dlkm`, ...) become read-write.
 - `/data` storage is used for `upperdir` of OverlayFS mount. However, on some kernel, f2fs is not supported by OverlayFS and cannot be used directly. The workaround is to create an ext4 loop image then mount it.
@@ -11,7 +15,7 @@ On Android 10+, system partitions might no longer be able to remount as read-wri
 
 > If you can't modify system files with MT File Manager, try using [Material Files](https://github.com/zhanghai/MaterialFiles) instead!
 
-> This module might confict with KernelSU module overlayfs mount as KernelSU does not handle mounts under partitions in the correct way and can cause some problems such as missing some lowerdirs of stock overlayfs mounts or missing some mounts
+> ~~This module might confict with KernelSU module overlayfs mount as KernelSU does not handle mounts under partitions in the correct way and can cause some problems such as missing some lowerdirs of stock overlayfs mounts or missing some mounts.~~ KernelSU will introduce ability to make system appears to be read-write by using OverlayFS in the future.
 
 ## Build
 
@@ -59,14 +63,14 @@ su -mm -c magic_remount_ro
 
 ## Overlayfs-based Magisk module
 
-- If you want to use overlayfs mount for your module, add these line to the end of `customize.sh`
+- If you want to use overlayfs mount for your module, add these line to the end of `customize.sh`:
 
 ```bash
-
 OVERLAY_IMAGE_EXTRA=0     # number of kb need to be added to overlay.img
 OVERLAY_IMAGE_SHRINK=true # shrink overlay.img or not?
-INCLUDE_MAGIC_MOUNT=false # enable legacy Magisk mount or not when Magisk_OverlayFS is disabled
+INCLUDE_MAGIC_MOUNT=false # enable legacy Magisk mount
 
+# Only use OverlayFS if Magisk_OverlayFS is installed
 if [ -f "/data/adb/modules/magisk_overlayfs/util_functions.sh" ] && \
     /data/adb/modules/magisk_overlayfs/overlayfs_system --test; then
   ui_print "- Add support for overlayfs"

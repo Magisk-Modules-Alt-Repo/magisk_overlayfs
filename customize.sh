@@ -49,8 +49,7 @@ fi
 
 ui_print "- Extract files"
 
-unzip -oj "$ZIPFILE" overlay.xz \
-                     post-fs-data.sh \
+unzip -oj "$ZIPFILE" post-fs-data.sh \
                      service.sh \
                      util_functions.sh \
                      mode.sh \
@@ -58,15 +57,12 @@ unzip -oj "$ZIPFILE" overlay.xz \
                      uninstall.sh \
                      module.prop \
                      "libs/$ABI/overlayfs_system" \
-                     "libs/$ABI/busybox" \
                      -d "$MODPATH"
-rm -rf /data/adb/overlay.xz
-unzip -oj "$ZIPFILE" overlay.xz -d "/data/adb"
 unzip -oj "$ZIPFILE" util_functions.sh  -d "/data/adb/modules/${MODPATH##*/}"
 
 ui_print "- Setup module"
 
-chmod 777 "$MODPATH/overlayfs_system" "$MODPATH/busybox"
+chmod 777 "$MODPATH/overlayfs_system"
 
 resize_img() {
     e2fsck -pf "$1" || return 1
@@ -84,17 +80,26 @@ test_mount_image() {
     result_mnt=1
     mount -t ext4 -o rw "$LOOPDEV" "$randdir" && \
     "$MODPATH/overlayfs_system" --test --check-ext4 "$randdir" && result_mnt=0
+    # ensure that uppderdir does not override my binary
+    rm -rf "$randdir/upper/system/bin/overlayfs_system" \
+           "$randdir/upper/system/bin/magic_remount_rw" \
+           "$randdir/upper/system/bin/magic_remount_ro"
     umount -l "$randdir"
     return $result_mnt
 }
-    
+
+create_ext4_image() {
+    dd if=/dev/zero of="$1" bs=1024 count=100
+    /system/bin/mkfs.ext4 "$1" && return 0
+    return 1
+}
 
 if [ ! -f "/data/adb/overlay" ] || ! test_mount_image; then
     rm -rf "/data/adb/overlay"
     ui_print "- Setup 2GB ext4 image at /data/adb/overlay"
     ui_print "  Please wait..."
-    if ! xz -kd "/data/adb/overlay.xz" || ! resize_img "/data/adb/overlay" 2000M || ! test_mount_image; then
-        rm -rf /data/adb/overlay.xz
+    if ! create_ext4_image "/data/adb/overlay" || ! resize_img "/data/adb/overlay" 2000M || ! test_mount_image; then
+        rm -rf /data/adb/overlay
         abort "! Setup ext4 image failed, abort"
     fi
 fi
