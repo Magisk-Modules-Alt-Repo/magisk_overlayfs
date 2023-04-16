@@ -105,6 +105,9 @@ if [ ! -f "/data/adb/overlay" ] || ! test_mount_image; then
 fi
 
 mkdir -p "$MODPATH/system/bin"
+chcon -R u:object_r:system_file:s0 "$MODPATH/system"
+chmod -R 755 "$MODPATH/system"
+
 cp -af "$MODPATH/overlayfs_system" "$MODPATH/system/bin"
 ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_rw"
 ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_ro"
@@ -119,7 +122,5 @@ ui_print "* OverlayFS is mounted read-only by default"
 ui_print "* You can modify mode.sh to change mode of OverlayFS"
 ui_print "* OverlayFS upper loop device will be setup at: "
 ui_print "*   /dev/block/overlayfs_loop" 
-ui_print "* On Magisk, OverlayFS upper loop image will be mounted at:"
-ui_print "*   \$(magisk --path)/overlayfs_mnt"
 
 ui_print

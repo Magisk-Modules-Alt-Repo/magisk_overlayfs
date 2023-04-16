@@ -13,12 +13,7 @@ if [ ! -e "/mnt/vendor/system" ]; then
     OVERLAYMNT="/mnt/vendor/system"
 fi
 
-if [ -z "$MAGISKTMP" ];then
-    # KernelSU
-    MODULEMNT="/mnt/overlay_modules"
-else
-    MODULEMNT="$MAGISKTMP/overlay_modules"
-fi
+MODULEMNT="/mnt/master_overlay"
 
 mv -fT /cache/overlayfs.log /cache/overlayfs.log.bak
 rm -rf /cache/overlayfs.log
@@ -62,6 +57,8 @@ if ! "$MODDIR/overlayfs_system" --test --check-ext4 "$OVERLAYMNT"; then
     exit
 fi
 
+num=0
+
 for i in /data/adb/modules/*; do
     [ ! -e "$i" ] && break;
     module_name="$(basename "$i")"
@@ -69,26 +66,25 @@ for i in /data/adb/modules/*; do
         loop_setup "$i/overlay.img"
         if [ ! -z "$LOOPDEV" ]; then
             echo "mount overlayfs for module: $module_name" >>/cache/overlayfs.log
-            mkdir -p "$MODULEMNT/$module_name"
-            mount -o rw -t ext4 "$LOOPDEV" "$MODULEMNT/$module_name"
+            mkdir -p "$MODULEMNT/$num"
+            mount -o rw -t ext4 "$LOOPDEV" "$MODULEMNT/$num"
+            ln -s "./$num" "$MODULEMNT/$module_name"
         fi
     fi
+    num="$((num+1))"
 done
 
 OVERLAYLIST=""
 
 for i in "$MODULEMNT"/*; do
     [ ! -e "$i" ] && break;
-    if "$MODDIR/overlayfs_system" --test --check-ext4 "$i"; then
+    if [ -d "$i" ] && [ ! -L "$i" ] && "$MODDIR/overlayfs_system" --test --check-ext4 "$i"; then
         OVERLAYLIST="$i:$OVERLAYLIST"
     fi
 done
 
 mkdir -p "$OVERLAYMNT/upper"
 mkdir -p "$OVERLAYMNT/worker"
-
-rm -rf "$OVERLAYMNT/master"
-mkdir -p "$OVERLAYMNT/master"
 
 if [ ! -z "$OVERLAYLIST" ]; then
     export OVERLAYLIST="${OVERLAYLIST::-1}"
@@ -113,11 +109,8 @@ cat /proc/mounts >>/cache/overlayfs.log
         sleep 1
     done
     rm -rf /dev/.overlayfs_service_unblock
-    if [ -z "$MAGISKTMP" ]; then
-        # KernelSU
-        umount -l "$MODULEMNT"
-        rmdir "$MODULEMNT"
-    fi
+    umount -l "$MODULEMNT"
+    rmdir "$MODULEMNT"
     umount -l "$OVERLAYMNT"
     rmdir "$OVERLAYMNT"
 
