@@ -7,19 +7,19 @@ export MAGISKTMP="$(magisk --path)"
 chmod 777 "$MODDIR/overlayfs_system"
 
 OVERLAYDIR="/data/adb/overlay"
-OVERLAYMNT="/mnt/overlay_system"
+OVERLAYMNT="/mnt/overlay"
+MODULEMNT="/mnt/loop"
 
 if [ ! -e "/mnt/vendor/system" ]; then
     OVERLAYMNT="/mnt/vendor/system"
 fi
 
-MODULEMNT="/mnt/master_overlay"
 
 mv -fT /cache/overlayfs.log /cache/overlayfs.log.bak
 rm -rf /cache/overlayfs.log
 echo "--- Start debugging log ---" >/cache/overlayfs.log
-echo "init mount namespace: $(readlink /proc/1/ns/mnt)" >/cache/overlayfs.log
-echo "current mount namespace: $(readlink /proc/self/ns/mnt)" >/cache/overlayfs.log
+echo "init mount namespace: $(readlink /proc/1/ns/mnt)" >>/cache/overlayfs.log
+echo "current mount namespace: $(readlink /proc/self/ns/mnt)" >>/cache/overlayfs.log
 
 mkdir -p "$OVERLAYMNT"
 mkdir -p "$OVERLAYDIR"
@@ -109,10 +109,6 @@ cat /proc/mounts >>/cache/overlayfs.log
         sleep 1
     done
     rm -rf /dev/.overlayfs_service_unblock
-    umount -l "$MODULEMNT"
-    rmdir "$MODULEMNT"
-    umount -l "$OVERLAYMNT"
-    rmdir "$OVERLAYMNT"
 
     echo "--- Mountinfo (late_start) ---" >>/cache/overlayfs.log
     cat /proc/mounts >>/cache/overlayfs.log
