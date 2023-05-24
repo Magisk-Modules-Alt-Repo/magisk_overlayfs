@@ -9,7 +9,9 @@ Benefits of using overlayfs for system partitions:
 - Make most parts of system partition (`/system`, `/vendor`, `/product`, `/system_ext`, `/odm`, `/odm_dlkm`, `/vendor_dlkm`, ...) become read-write.
 - `/data` storage is used for `upperdir` of OverlayFS mount. However, on some kernel, f2fs is not supported by OverlayFS and cannot be used directly. The workaround is to create an ext4 loop image then mount it.
 - All modifications to overlayfs partition will not be made directly, but will be stored in upperdir, so it is easy to revert. Just need to remove/disable module so your system will return to untouched stage.
-- Support Magisk version 23.0+ and latest version of KernelSU. However there is conflict with KernelSU's OverlayFS, read [bellow](#modify-system-files-with-overlayfs)!)
+- Support Magisk version 23.0+ and latest version of KernelSU
+
+> Due to tiann's KernelSU overlayfs hijack, if you are using KernelSU, please disable all other modules when you want to modify system partitions, and enable them afterward!
 
 > If you are interested in OverlayFS, you can read documentation at <https://docs.kernel.org/filesystems/overlayfs.html>
 
@@ -39,8 +41,6 @@ export OVERLAY_MODE=2
 - On Magisk, OverlayFS upper loop are mounted at `$(magisk --path)/overlayfs_mnt`. You can make modifications through this path to make changes to overlayfs mounted in system.
 
 ## Modify system files with OverlayFS
-
-> Since we switch to mount overlayfs on `/system`, `/vendor`,... instead of subdirectories like `/system/app`, `/system/etc`, ... For KernelSU users, If you enable any module that want to add files to system, it will mount read-only overlayfs on top of (override) read-write overlayfs by `magisk_overlayfs`
 
 - If you are lazy to remount, please modify `mode.sh` and set it to `OVERLAY_MODE=1` so overlayfs will be always read-write every boot.
 

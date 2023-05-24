@@ -116,11 +116,24 @@ ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_ro"
 support_overlayfs && rm -rf "$MODPATH/system"
 
 ui_print
-
 ui_print " IMPORTANT! PLEASE READ!"
-ui_print "* OverlayFS is mounted read-only by default"
-ui_print "* You can modify mode.sh to change mode of OverlayFS"
-ui_print "* OverlayFS upper loop device will be setup at: "
-ui_print "*   /dev/block/overlayfs_loop" 
+sleep 1
+ui_print "* 1. OverlayFS is mounted read-only by default"
+sleep 1
+ui_print "*     Modify mode.sh to change mode of OverlayFS"
+sleep 1
+ui_print "* 2. weishu's KernelSU overlayfs-based module mount"
+sleep 1
+ui_print "*     will cause locked read-only partitions"
+sleep 1
+ui_print "*    If you are using weishu's KernelSU, "
+sleep 1
+ui_print "*     please disable all other modules"
+sleep 1
+ui_print "*     when you want to modify system partitions"
+for i in `seq 1 1 5`; do
+    sleep 1
+    ui_print "$i"
+done
 
 ui_print

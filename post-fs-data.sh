@@ -68,7 +68,6 @@ for i in /data/adb/modules/*; do
             echo "mount overlayfs for module: $module_name" >>/cache/overlayfs.log
             mkdir -p "$MODULEMNT/$num"
             mount -o rw -t ext4 "$LOOPDEV" "$MODULEMNT/$num"
-            ln -s "./$num" "$MODULEMNT/$module_name"
         fi
     fi
     num="$((num+1))"
@@ -99,6 +98,12 @@ if [ ! -z "$MAGISKTMP" ]; then
     mkdir -p "$MAGISKTMP/overlayfs_mnt"
     mount --bind "$OVERLAYMNT" "$MAGISKTMP/overlayfs_mnt"
 fi
+
+
+umount -l "$OVERLAYMNT"
+rmdir "$OVERLAYMNT"
+umount -l "$MODULEMNT"
+rmdir "$MODULEMNT"
 
 rm -rf /dev/.overlayfs_service_unblock
 echo "--- Mountinfo (post-fs-data) ---" >>/cache/overlayfs.log
