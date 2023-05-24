@@ -9,13 +9,9 @@ Benefits of using overlayfs for system partitions:
 - Make most parts of system partition (`/system`, `/vendor`, `/product`, `/system_ext`, `/odm`, `/odm_dlkm`, `/vendor_dlkm`, ...) become read-write.
 - `/data` storage is used for `upperdir` of OverlayFS mount. However, on some kernel, f2fs is not supported by OverlayFS and cannot be used directly. The workaround is to create an ext4 loop image then mount it.
 - All modifications to overlayfs partition will not be made directly, but will be stored in upperdir, so it is easy to revert. Just need to remove/disable module so your system will return to untouched stage.
-- Support Magisk version 23.0+ and latest version of KernelSU
+- Support Magisk version 23.0+ and latest version of KernelSU. However there is conflict with KernelSU's OverlayFS, read [bellow](#modify-system-files-with-overlayfs)!)
 
 > If you are interested in OverlayFS, you can read documentation at <https://docs.kernel.org/filesystems/overlayfs.html>
-
-> If you can't modify system files with MT File Manager, try using [Material Files](https://github.com/zhanghai/MaterialFiles) instead!
-
-> ~~This module might confict with KernelSU module overlayfs mount as KernelSU does not handle mounts under partitions in the correct way and can cause some problems such as missing some lowerdirs of stock overlayfs mounts or missing some mounts.~~ KernelSU will introduce ability to make system appears to be read-write by using OverlayFS in the future.
 
 ## Build
 
@@ -44,8 +40,8 @@ export OVERLAY_MODE=2
 
 ## Modify system files with OverlayFS
 
-- Limitations: you can only modify content in subdirectories of partitions because covering entire partitions with `overlayfs` can result in devices unable to boot.
-- For most people, it should be enough to modify subdirectories of partitions (`/system/app`, `/system/etc`, ...)
+> Since we switch to mount overlayfs on `/system`, `/vendor`,... instead of subdirectories like `/system/app`, `/system/etc`, ... For KernelSU users, If you enable any module that want to add files to system, it will mount read-only overlayfs on top of (override) read-write overlayfs by `magisk_overlayfs`
+
 - If you are lazy to remount, please modify `mode.sh` and set it to `OVERLAY_MODE=1` so overlayfs will be always read-write every boot.
 
 - You can quickly remount all overlayfs to read-write by this command in terminal:
@@ -57,8 +53,6 @@ su -mm -c magic_remount_rw
 ```bash
 su -mm -c magic_remount_ro
 ```
-
-<img src="https://user-images.githubusercontent.com/84650617/231326507-7db9b7c8-0dca-40a0-9460-4bdcd06ae3c5.png" width="50%"/><img src="https://user-images.githubusercontent.com/84650617/231326520-99bcd56f-7ab5-4186-920a-bf9f97c729e6.png" width="50%"/>
 
 
 ## Overlayfs-based Magisk module
