@@ -126,7 +126,7 @@ cp -af "$MODPATH/overlayfs_system" "$MODPATH/system/bin"
 ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_rw"
 ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_ro"
 
-if [ "$BOOTMODE" ] && [ "$MAGISK_VER_CODE" ]; then
+if [ "$BOOTMODE" ] && [ -z "$KSU" ]; then
     . "$MODPATH/util_functions.sh"
     support_overlayfs && rm -rf "$MODPATH/system"
 fi
