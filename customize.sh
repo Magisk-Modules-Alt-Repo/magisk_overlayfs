@@ -1,8 +1,22 @@
 SKIPUNZIP=1
-if ! $BOOTMODE; then
-    abort "! Install from Recovery is not supported"
-fi
 
+if [ "$BOOTMODE" ] && [ "$KSU" ]; then
+    ui_print "- Installing from KernelSU app"
+    ui_print "- KernelSU version: $KSU_KERNEL_VER_CODE (kernel) + $KSU_VER_CODE (ksud)"
+    ui_print "- Please note that KernelSU modules mount will make"
+    ui_print "  your system partitions unable to mount as rw"
+    ui_print "- If you are using KernelSU, "
+    ui_print "  please disable all other modules"
+    ui_print "  or unmount KSU overlayfs"
+    ui_print "  when you want to modify system partitions"
+elif [ "$BOOTMODE" ] && [ "$MAGISK_VER_CODE" ]; then
+    ui_print "- Installing from Magisk app"
+else
+    ui_print "*********************************************************"
+    ui_print "! Install from recovery is not supported"
+    ui_print "! Please install from KernelSU or Magisk app"
+    abort    "*********************************************************"
+fi
 
 loop_setup() {
   unset LOOPDEV
@@ -112,28 +126,9 @@ cp -af "$MODPATH/overlayfs_system" "$MODPATH/system/bin"
 ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_rw"
 ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_ro"
 
-. "$MODPATH/util_functions.sh"
-support_overlayfs && rm -rf "$MODPATH/system"
-
-ui_print
-ui_print " IMPORTANT! PLEASE READ!"
-sleep 1
-ui_print "* 1. OverlayFS is mounted read-only by default"
-sleep 1
-ui_print "*     Modify mode.sh to change mode of OverlayFS"
-sleep 1
-ui_print "* 2. weishu's KernelSU overlayfs-based module mount"
-sleep 1
-ui_print "*     will cause locked read-only partitions"
-sleep 1
-ui_print "*    If you are using weishu's KernelSU, "
-sleep 1
-ui_print "*     please disable all other modules"
-sleep 1
-ui_print "*     when you want to modify system partitions"
-for i in `seq 1 1 5`; do
-    sleep 1
-    ui_print "$i"
-done
+if [ "$BOOTMODE" ] && [ "$MAGISK_VER_CODE" ]; then
+    . "$MODPATH/util_functions.sh"
+    support_overlayfs && rm -rf "$MODPATH/system"
+fi
 
 ui_print

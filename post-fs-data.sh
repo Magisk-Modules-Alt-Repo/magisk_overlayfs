@@ -62,15 +62,22 @@ num=0
 for i in /data/adb/modules/*; do
     [ ! -e "$i" ] && break;
     module_name="$(basename "$i")"
-    if [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ] && [ -f "$i/overlay.img" ]; then
-        loop_setup "$i/overlay.img"
-        if [ ! -z "$LOOPDEV" ]; then
-            echo "mount overlayfs for module: $module_name" >>/cache/overlayfs.log
+    if [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ]; then
+        if [ -f "$i/overlay.img" ]; then
+            loop_setup "$i/overlay.img"
+            if [ ! -z "$LOOPDEV" ]; then
+                echo "mount overlayfs for module: $module_name" >>/cache/overlayfs.log
+                mkdir -p "$MODULEMNT/$num"
+                mount -o rw -t ext4 "$LOOPDEV" "$MODULEMNT/$num"
+            fi
+            num="$((num+1))"
+        fi
+        if [ "$KSU" == "true" ]; then
             mkdir -p "$MODULEMNT/$num"
-            mount -o rw -t ext4 "$LOOPDEV" "$MODULEMNT/$num"
+            mount --bind "$i" "$MODULEMNT/$num"
+            num="$((num+1))"
         fi
     fi
-    num="$((num+1))"
 done
 
 OVERLAYLIST=""
