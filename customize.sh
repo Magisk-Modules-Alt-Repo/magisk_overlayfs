@@ -6,8 +6,7 @@ if [ "$BOOTMODE" ] && [ "$KSU" ]; then
     ui_print "- Please note that KernelSU modules mount will make"
     ui_print "  your system partitions unable to mount as rw"
     ui_print "- If you are using KernelSU, "
-    ui_print "  please disable all other modules"
-    ui_print "  or unmount KSU overlayfs"
+    ui_print "  please unmount all ksu overlayfs"
     ui_print "  when you want to modify system partitions"
 elif [ "$BOOTMODE" ] && [ "$MAGISK_VER_CODE" ]; then
     ui_print "- Installing from Magisk app"

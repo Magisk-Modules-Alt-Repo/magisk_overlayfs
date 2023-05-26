@@ -11,8 +11,6 @@ Benefits of using overlayfs for system partitions:
 - All modifications to overlayfs partition will not be made directly, but will be stored in upperdir, so it is easy to revert. Just need to remove/disable module so your system will return to untouched stage.
 - Support Magisk version 23.0+ and latest version of KernelSU
 
-> Due to tiann's KernelSU overlayfs hijack, if you are using KernelSU, please disable all other modules when you want to modify system partitions, and enable them afterward!
-
 > If you are interested in OverlayFS, you can read documentation at <https://docs.kernel.org/filesystems/overlayfs.html>
 
 ## Build
@@ -20,6 +18,16 @@ Benefits of using overlayfs for system partitions:
 There is two way:
 - Fork this repo and run github actions
 - Run `bash build.sh` (On Linux/WSL)
+
+## KernelSU problem
+
+- The KernelSU module is similar to Magisk in that it allows users to modify the system partition while maintaining system integrity. It does this through the implementation of overlayfs. However, it's important to note that KernelSU makes changes to the system partition by using read-only overlayfs, which also mounts on top of magic_overlayfs and prevent system from being remounted as read-write. If you want to remount your system partitions as read-write, you simply need to first unmount the KernelSU overlayfs using this command:
+
+```
+nsenter -t 1 -m overlayfs_system --unmount-ksu
+```
+
+- After that you will be able to remount system as read-write
 
 ## Change OverlayFS mode
 
