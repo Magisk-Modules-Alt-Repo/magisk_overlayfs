@@ -2,7 +2,7 @@
 # 0 - read-only but can still remount as read-write
 # 1 - read-write default
 # 2 - read-only locked (cannot remount as read-write)
-export OVERLAY_MODE=0
+export OVERLAY_MODE=1
 
 # Set to true to enable legacy mode that mount overlayfs on subdirectories instead of root partititons
 export OVERLAY_LEGACY_MOUNT=false
